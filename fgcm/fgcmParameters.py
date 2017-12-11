@@ -250,6 +250,9 @@ class FgcmParameters(object):
         self.compRetrievedTauNight = np.zeros(self.campaignNights.size,dtype='f8') + self.tauStd
         self.compRetrievedTauNightInput = self.compRetrievedTauNight.copy()
 
+        # and exp gray smooth values
+        self.compExpGraySmooth = np.zeros(self.nExp, dtype='f8')
+
         # compute the units
         self.unitDictSteps = fgcmLUT.computeStepUnits(self.stepUnitReference,
                                                       self.stepGrain,
@@ -383,6 +386,9 @@ class FgcmParameters(object):
         # These are nightly properties
         self.compRetrievedTauNight = inParams['COMPRETRIEVEDTAUNIGHT'][0]
         self.compRetrievedTauNightInput = self.compRetrievedTauNight.copy()
+
+        # exp gray smooth
+        self.compExpGraySmooth = inParams['COMPEXPGRAYSMOOTH'][0]
 
         # If we are resetting parameters, and want to use retrieved tau as the initial
         #  guess, set parTauIntercept to that.
@@ -731,7 +737,8 @@ class FgcmParameters(object):
                ('PARRETRIEVEDPWVSCALE','f8'),
                ('PARRETRIEVEDPWVOFFSET','f8'),
                ('PARRETRIEVEDPWVNIGHTLYOFFSET','f8',self.parRetrievedPWVNightlyOffset.size),
-               ('COMPRETRIEVEDTAUNIGHT','f8',self.compRetrievedTauNight.size)]
+               ('COMPRETRIEVEDTAUNIGHT','f8',self.compRetrievedTauNight.size),
+               ('COMPEXPGRAYSMOOTH','f8',self.compExpGraySmooth.size)]
 
         if (self.hasExternalPWV):
             dtype.extend([('PAREXTERNALPWVSCALE','f8'),
@@ -781,6 +788,8 @@ class FgcmParameters(object):
         pars['PARRETRIEVEDPWVNIGHTLYOFFSET'][:] = self.parRetrievedPWVNightlyOffset
 
         pars['COMPRETRIEVEDTAUNIGHT'][:] = self.compRetrievedTauNight
+
+        pars['COMPEXPGRAYSMOOTH'][:] = self.compExpGraySmooth
 
         return parInfo, pars
 
