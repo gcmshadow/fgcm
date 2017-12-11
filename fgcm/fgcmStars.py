@@ -950,6 +950,20 @@ class FgcmStars(object):
 
         obsMagADU[:] += fgcmPars.expApertureCorrection[obsExpIndex]
 
+    def applyExpGraySmooth(self, fgcmPars):
+        """
+        """
+
+        self.fgcmLog.info('Applying smoothed expGray corrections to raw magnitudes')
+
+        obsExpIndex = snmm.getArray(self.obsExpIndexHandle)
+        obsMagADU = snmm.getArray(self.obsMagADUHandle)
+
+        # note that EXP^gray = < <mstd>_j - mstd_ij >
+        #  I hope this sign is correct
+
+        obsMagADU[:] += fgcmPars.compExpGraySmooth[obsExpIndex]
+
     def saveFlagStarIndices(self,flagStarFile):
         """
         """
