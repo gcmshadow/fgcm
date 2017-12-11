@@ -49,6 +49,8 @@ class FgcmGray(object):
         self.expGrayCheckDeltaT = fgcmConfig.expGrayCheckDeltaT
         #self.varNSig = fgcmConfig.varNSig
         #self.varMinBand = fgcmConfig.varMinBand
+        self.expGraySmoothDeltaT = fgcmConfig.expGraySmoothDeltaT
+        self.applyExpGraySmooth = fgcmConfig.applyExpGraySmooth
 
         self._prepareGrayArrays()
 
@@ -695,3 +697,71 @@ class FgcmGray(object):
                                                              self.outfileBaseWithCycle,
                                                              self.fgcmPars.bands[bandIndex0],
                                                              self.fgcmPars.bands[bandIndex1]))
+
+    def computeExpGraySmooth(self):
+        """
+        """
+
+        # make a placeholder
+        expGraySmooth = np.zeros_like(self.fgcmPars.compExpGraySmooth)
+
+        expGray = snmm.getArray(self.expGrayHandle)
+
+        expGrayRaw = np.zeros_like(expGray)
+        expGrayRaw[:] = expGray
+        if self.applyExpGraySmooth:
+            # unapply correction!
+            expGrayRaw[:] = expGray - self.fgcmPars.compExpGraySmooth
+
+        # arbitrarily choose the minimum number of exposures to smooth
+        # FIXME: make this configurable
+        minExpsToSmooth = 5
+
+        # histogram over the nights...
+        h, rev = esutil.stat.histogram(self.fgcmPars.expNightIndex, rev=True)
+
+        # this 5 is ar
+        gd, = np.where(h >= minExpsToSmooth)
+
+        for i in xrange(gd.size):
+            # all the exposures on a night
+            i1a = rev[rev[gd[i]]:rev[gd[i]+1]]
+
+            # at the moment, painfully loop over them
+            # FIXME on the bands
+            for j in xrange(i1a.size):
+                use, = np.where(((self.fgcmPars.expBandIndex[i1a] == 0) |
+                                 (self.fgcmPars.expBandIndex[i1a] == 1) |
+                                 (self.fgcmPars.expBandIndex[i1a] == 2)) &
+                                (self.fgcmPars.expFlag[i1a] == 0) &
+                                (np.abs(self.fgcmPars.expMJD[i1a] -
+                                        self.fgcmPars.expMJD[i1a[j]]) <
+                                 self.expGraySmoothDeltaT))
+                if (use.size >= minExpsToSmooth):
+                    expGraySmooth[i1a[j]] = np.median(expGrayRaw[i1a[use]])
+
+
+
+        # make a plot of old vs new... per band?  meh
+        fig = plt.figure(figsize=(8,6))
+        fig.clf()
+        ax = fig.add_subplot(111)
+
+        use,=np.where((self.fgcmPars.compExpGraySmooth != 0.0) &
+                      (expGraySmooth != 0.0))
+
+        ax.hexbin(self.fgcmPars.compExpGraySmooth[use],
+                  expGraySmooth[use], bins='log')
+        #plotRange = np.array([-0.01, 0.01])
+        plotRange = np.array([expGraySmooth[use].min(),
+                              expGraySmooth[use].max()])
+        ax.plot(plotRange, plotRange, 'r--')
+        ax.set_xlabel('EXP_GRAY_SMOOTH input')
+        ax.set_ylabel('EXP_GRAY_SMOOTH output')
+
+        fig.savefig('%s/%s_smoothexpgray_vs_smoothexpgray_in.png' % (self.plotPath,
+                                                                     self.outfileBaseWithCycle))
+        plt.close()
+
+        # and store new one
+        self.fgcmPars.compExpGraySmooth[:] = expGraySmooth
