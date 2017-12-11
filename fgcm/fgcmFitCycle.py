@@ -168,10 +168,14 @@ class FgcmFitCycle(object):
         # Apply aperture corrections and SuperStar if available
         # select exposures...
         if (not self.initialCycle):
-            self.fgcmLog.debug('FitCycle is applying SuperStarFlat')
+            self.fgcmLog.info('FitCycle is applying SuperStarFlat')
             self.fgcmStars.applySuperStarFlat(self.fgcmPars)
-            self.fgcmLog.debug('FitCycle is applying ApertureCorrection')
+            self.fgcmLog.info('FitCycle is applying ApertureCorrection')
             self.fgcmStars.applyApertureCorrection(self.fgcmPars)
+
+            if self.fgcmConfig.applyExpGraySmooth:
+                self.fgcmLog.info('FitCycle is applying ExpGraySmooth')
+                self.fgcmStars.applyExpGraySmooth(self.fgcmPars)
 
             # and flag exposures using quantities computed from previous cycle
             self.fgcmLog.debug('FitCycle is running selectGoodExposures()')
@@ -280,6 +284,7 @@ class FgcmFitCycle(object):
         # Compute CCD^gray and EXP^gray
         self.fgcmLog.debug('FitCycle computing Exp and CCD Gray')
         self.fgcmGray.computeCCDAndExpGray()
+        self.fgcmGray.computeExpGraySmooth()
         self.fgcmLog.info(getMemoryString('After computing CCD and Exp Gray'))
 
         # Compute sigFgcm
