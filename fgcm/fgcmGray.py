@@ -711,7 +711,9 @@ class FgcmGray(object):
         expGrayRaw[:] = expGray
         if self.applyExpGraySmooth:
             # unapply correction!
+            # this seems to give the wrong sign at the end?
             expGrayRaw[:] = expGray - self.fgcmPars.compExpGraySmooth
+            #expGrayRaw[:] = expGray + self.fgcmPars.compExpGraySmooth
 
         # arbitrarily choose the minimum number of exposures to smooth
         # FIXME: make this configurable
@@ -747,19 +749,19 @@ class FgcmGray(object):
         fig.clf()
         ax = fig.add_subplot(111)
 
-        use,=np.where((self.fgcmPars.compExpGraySmooth != 0.0) &
+        use,=np.where((self.fgcmPars.compExpGraySmooth != 0.0) |
                       (expGraySmooth != 0.0))
 
-        ax.hexbin(self.fgcmPars.compExpGraySmooth[use],
-                  expGraySmooth[use], bins='log')
-        #plotRange = np.array([-0.01, 0.01])
-        plotRange = np.array([expGraySmooth[use].min(),
-                              expGraySmooth[use].max()])
-        ax.plot(plotRange, plotRange, 'r--')
-        ax.set_xlabel('EXP_GRAY_SMOOTH input')
-        ax.set_ylabel('EXP_GRAY_SMOOTH output')
+        if (use.size > 0):
+            ax.hexbin(self.fgcmPars.compExpGraySmooth[use],
+                      expGraySmooth[use], bins='log')
+            plotRange = np.array([expGraySmooth[use].min(),
+                                  expGraySmooth[use].max()])
+            ax.plot(plotRange, plotRange, 'r--')
+            ax.set_xlabel('EXP_GRAY_SMOOTH input')
+            ax.set_ylabel('EXP_GRAY_SMOOTH output')
 
-        fig.savefig('%s/%s_smoothexpgray_vs_smoothexpgray_in.png' % (self.plotPath,
+            fig.savefig('%s/%s_smoothexpgray_vs_smoothexpgray_in.png' % (self.plotPath,
                                                                      self.outfileBaseWithCycle))
         plt.close()
 
